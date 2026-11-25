@@ -75,7 +75,7 @@ class GlassKeyboardView(
     private val edgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = dp(1f) }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
     }
     private val smallPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
     private val handler = Handler(Looper.getMainLooper())
@@ -308,13 +308,14 @@ class GlassKeyboardView(
         }
         val isEmoji = key.type == KeyType.CHAR && key.value.isNotEmpty() && key.value.codePointAt(0) > 0xFFFF
         textPaint.textSize = when {
-            isEmoji -> sp(28f)
+            isEmoji -> sp(26f)
             key.type == KeyType.SPACE -> sp(13f)
-            label.length > 2 -> sp(14f)
-            isModifier -> sp(21f)
-            else -> sp(27f)
+            label.length > 2 -> sp(13f)
+            isModifier -> sp(20f)
+            else -> sp(24f)
         }
         textPaint.color = when {
+            key.type == KeyType.CHAR -> pal.keyText
             active -> pal.accent
             isModifier -> pal.modText
             else -> pal.keyText
@@ -327,8 +328,8 @@ class GlassKeyboardView(
             canvas.drawText(label, r.centerX(), textPaint.baseline(r.centerY()), textPaint)
         }
         if (key.hint.isNotEmpty()) {
-            smallPaint.color = if (pal.isLight) 0xAA3C4043.toInt() else 0xAA94A3B8.toInt()
-            smallPaint.textSize = sp(11f)
+            smallPaint.color = if (pal.isLight) 0x993C4043.toInt() else 0x8094A3B8.toInt()
+            smallPaint.textSize = sp(10f)
             canvas.drawText(key.hint, r.centerX(), smallPaint.baseline(r.top + sp(14f)), smallPaint)
         }
     }
