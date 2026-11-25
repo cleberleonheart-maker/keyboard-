@@ -75,41 +75,41 @@ private val bottomRow = line(
     p("🎤", 1f, KeyType.MIC),
     p("espaço", 6.5f, KeyType.SPACE),
     p("PT", 1f, KeyType.LANGUAGE),
-    p("↵", 2f, KeyType.ENTER)
+    p("↵", 1.5f, KeyType.ENTER)
 )
 
 object Layouts {
-    const val UNITS = 12f
+    const val UNITS = 11.5f
 
     val LETTERS: List<GlassKey> = listOf(
-        line(0, p("", 1f, KeyType.SPACER), *"qwertyuiop".mapIndexed { i, c -> p(c.toString(), hint = if (i < 9) (i + 1).toString() else "0") }.toTypedArray(), p("", 1f, KeyType.SPACER)),
-        line(1, p("", 1f, KeyType.SPACER), *"asdfghjklç".map { p(it.toString()) }.toTypedArray(), p("", 1f, KeyType.SPACER)),
+        line(0, p("", 0.75f, KeyType.SPACER), *"qwertyuiop".mapIndexed { i, c -> p(c.toString(), hint = if (i < 9) (i + 1).toString() else "0") }.toTypedArray(), p("", 0.75f, KeyType.SPACER)),
+        line(1, p("", 0.75f, KeyType.SPACER), *"asdfghjklç".map { p(it.toString()) }.toTypedArray(), p("", 0.75f, KeyType.SPACER)),
         line(
             2,
-            p("⇧", 1.5f, KeyType.SHIFT),
+            p("⇧", 1.25f, KeyType.SHIFT),
             *"zxcvbnm".map { p(it.toString()) }.toTypedArray(),
             p(","), p("."),
-            p("⌫", 1.5f, KeyType.BACKSPACE)
+            p("⌫", 1.25f, KeyType.BACKSPACE)
         ),
         bottomRow
     ).flatten()
 
     val NUMBERS: List<GlassKey> = listOf(
-        line(0, p("", 1f, KeyType.SPACER), *"1234567890".map { p(it.toString()) }.toTypedArray(), p("", 1f, KeyType.SPACER)),
+        line(0, p("", 0.75f, KeyType.SPACER), *"1234567890".map { p(it.toString()) }.toTypedArray(), p("", 0.75f, KeyType.SPACER)),
         line(
             1,
-            p("", 1f, KeyType.SPACER),
+            p("", 0.75f, KeyType.SPACER),
             *listOf("-", "/", ":", ";", "(", ")", "R$", "&", "@", "?").map { p(it) }.toTypedArray(),
-            p("", 1f, KeyType.SPACER)
+            p("", 0.75f, KeyType.SPACER)
         ),
-        line(2, p("#+=", 1.5f, KeyType.PAGE), *listOf(".", ",", "?", "!", "'", "\"", "(", ")", "#").map { p(it) }.toTypedArray(), p("⌫", 1.5f, KeyType.BACKSPACE)),
+        line(2, p("#+=", 1.25f, KeyType.PAGE), *listOf(".", ",", "?", "!", "'", "\"", "(", ")", "#").map { p(it) }.toTypedArray(), p("⌫", 1.25f, KeyType.BACKSPACE)),
         bottomRow
     ).flatten()
 
     val SYMBOLS: List<GlassKey> = listOf(
-        line(0, p("", 1f, KeyType.SPACER), *listOf("[", "]", "{", "}", "#", "%", "^", "*", "+", "=").map { p(it) }.toTypedArray(), p("", 1f, KeyType.SPACER)),
-        line(1, p("", 1f, KeyType.SPACER), *listOf("~", "`", "|", "<", ">", "€", "£", "¥", "¢", "«").map { p(it) }.toTypedArray(), p("", 1f, KeyType.SPACER)),
-        line(2, p("123", 1.5f, KeyType.PAGE), *listOf("•", "°", "™", "©", "®", "✓", "÷", "×", "→").map { p(it) }.toTypedArray(), p("⌫", 1.5f, KeyType.BACKSPACE)),
+        line(0, p("", 0.75f, KeyType.SPACER), *listOf("[", "]", "{", "}", "#", "%", "^", "*", "+", "=").map { p(it) }.toTypedArray(), p("", 0.75f, KeyType.SPACER)),
+        line(1, p("", 0.75f, KeyType.SPACER), *listOf("~", "`", "|", "<", ">", "€", "£", "¥", "¢", "«").map { p(it) }.toTypedArray(), p("", 0.75f, KeyType.SPACER)),
+        line(2, p("123", 1.25f, KeyType.PAGE), *listOf("•", "°", "™", "©", "®", "✓", "÷", "×", "→").map { p(it) }.toTypedArray(), p("⌫", 1.25f, KeyType.BACKSPACE)),
         bottomRow
     ).flatten()
 
@@ -127,17 +127,18 @@ object Layouts {
     fun emoji(page: Int): List<GlassKey> {
         val safePage = Math.floorMod(page, EMOJI_PAGE_COUNT)
         val items = EMOJI_CHUNKS[safePage]
+        val cell = UNITS / 6f
         val keys = mutableListOf<GlassKey>()
         items.forEachIndexed { i, item ->
-            keys += GlassKey(item, (i % 6) * 2f, i / 6, 2f, KeyType.CHAR, value = item)
+            keys += GlassKey(item, (i % 6) * cell, i / 6, cell, KeyType.CHAR, value = item)
         }
         keys += line(
             3,
             p("ABC", 1.5f, KeyType.PAGE),
             p("😊", 1.5f, KeyType.EMOJI, hint = "${safePage + 1}/$EMOJI_PAGE_COUNT"),
-            p("espaço", 5f, KeyType.SPACE),
-            p("⌫", 2f, KeyType.BACKSPACE),
-            p("↵", 2f, KeyType.ENTER)
+            p("espaço", 4.5f, KeyType.SPACE),
+            p("⌫", 1.25f, KeyType.BACKSPACE),
+            p("↵", 2.75f, KeyType.ENTER)
         )
         return keys
     }
