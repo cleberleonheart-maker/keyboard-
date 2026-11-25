@@ -38,15 +38,16 @@ private data class Palette(
     val specialB: Int,
     val keyText: Int = Color.WHITE,
     val modText: Int = 0xFFE2E8F8.toInt(),
-    val isLight: Boolean = false
+    val isLight: Boolean = false,
+    val flat: Boolean = false
 )
 
 private val PALETTES = listOf(
     Palette(0xFF0B1024.toInt(), 0xFF111A35.toInt(), 0x6638BDF8.toInt(), 0x55A78BFA.toInt(), 0xFF7DD3FC.toInt(), 0x26FFFFFF.toInt(), 0x0DFFFFFF.toInt(), 0x66438BFA.toInt(), 0x44256D9E.toInt()),
     Palette(0xFF130C26.toInt(), 0xFF1D1238.toInt(), 0x66C084FC.toInt(), 0x55F0ABFC.toInt(), 0xFFE9D5FF.toInt(), 0x26FFFFFF.toInt(), 0x0DFFFFFF.toInt(), 0x66A855F7.toInt(), 0x447E22C5.toInt()),
     Palette(0xFF06151F.toInt(), 0xFF0A2230.toInt(), 0x6622D3EE.toInt(), 0x5534D399.toInt(), 0xFF67E8F9.toInt(), 0x26FFFFFF.toInt(), 0x0DFFFFFF.toInt(), 0x660E7490.toInt(), 0x440F766E.toInt()),
-    Palette(0xFF0A0A0F.toInt(), 0xFF14141C.toInt(), 0x55F472B6.toInt(), 0x55818CF8.toInt(), 0xFFFDA4AF.toInt(), 0x20FFFFFF.toInt(), 0x0AFFFFFF.toInt(), 0x665B5878.toInt(), 0x443F3E56.toInt()),
-    Palette(0xFFF1F3F4.toInt(), 0xFFE3E6EA.toInt(), 0x0A1A73E8.toInt(), 0x0A34A853.toInt(), 0xFF1A73E8.toInt(), 0xFFFFFFFF.toInt(), 0xFFF1F3F4.toInt(), 0xFFE8EAED.toInt(), 0xFFDADCE0.toInt(), 0xFF202124.toInt(), 0xFF3C4043.toInt(), true),
+    Palette(0xFF1D1D24.toInt(), 0xFF1D1D24.toInt(), 0x00000000, 0x00000000, 0xFF404459.toInt(), 0xFF3B3B42.toInt(), 0xFF3B3B42.toInt(), 0xFF404459.toInt(), 0xFF404459.toInt(), 0xFFE0E0E7.toInt(), 0xFFE0E0E7.toInt(), false, true),
+    Palette(0xFFF1F3F4.toInt(), 0xFFE3E6EA.toInt(), 0x0A1A73E8.toInt(), 0x0A34A853.toInt(), 0xFF1A73E8.toInt(), 0xFFFFFFFF.toInt(), 0xFFF1F3F4.toInt(), 0xFFE8EAED.toInt(), 0xFFDADCE0.toInt(), 0xFF202124.toInt(), 0xFF3C4043.toInt(), true, true),
     Palette(0xFF1A1206.toInt(), 0xFF2A1B08.toInt(), 0x66F59E0B.toInt(), 0x55FBBF24.toInt(), 0xFFFCD34D.toInt(), 0x26FFFFFF.toInt(), 0x0DFFFFFF.toInt(), 0x66B45309.toInt(), 0x447A3E0B.toInt())
 )
 
@@ -57,7 +58,7 @@ class GlassKeyboardView(
 
     var keys: List<GlassKey> = Layouts.LETTERS
     var candidates: List<String> = emptyList()
-    var shiftState: Int = 0
+    var shiftState: Int = 2
     var enterLabel: String = context.getString(R.string.enter_default)
     var language: String = "PT"
     var paletteIndex: Int = 0
@@ -174,7 +175,10 @@ class GlassKeyboardView(
         setMeasuredDimension(width, maxOf(height, 1))
     }
 
-    private fun candidateHeight(): Float = minOf(dp(44f), maxOf(height * 0.16f, dp(32f)))
+    private fun candidateHeight(): Float {
+        val pal = PALETTES[Math.floorMod(paletteIndex, PALETTES.size)]
+        return if (pal.flat && !suggestionsEnabled) 0f else minOf(dp(44f), maxOf(height * 0.16f, dp(32f)))
+    }
 
     private fun toolbarStart(): Float = maxOf(width - dp(170f), dp(190f))
 
@@ -211,15 +215,21 @@ class GlassKeyboardView(
         super.onDraw(canvas)
         val pal = PALETTES[Math.floorMod(paletteIndex, PALETTES.size)]
 
-        bgPaint.shader = LinearGradient(0f, 0f, 0f, height.toFloat(), pal.bgTop, pal.bgBottom, Shader.TileMode.CLAMP)
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+        if (pal.flat) {
+            bgPaint.shader = null
+            bgPaint.color = pal.bgTop
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+        } else {
+            bgPaint.shader = LinearGradient(0f, 0f, 0f, height.toFloat(), pal.bgTop, pal.bgBottom, Shader.TileMode.CLAMP)
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
 
-        glowPaint.shader = RadialGradient(width * 0.1f, 0f, width * 0.62f, pal.glowA, Color.TRANSPARENT, Shader.TileMode.CLAMP)
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), glowPaint)
-        glowPaint.shader = RadialGradient(width * 0.92f, height * 0.95f, width * 0.7f, pal.glowB, Color.TRANSPARENT, Shader.TileMode.CLAMP)
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), glowPaint)
+            glowPaint.shader = RadialGradient(width * 0.1f, 0f, width * 0.62f, pal.glowA, Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), glowPaint)
+            glowPaint.shader = RadialGradient(width * 0.92f, height * 0.95f, width * 0.7f, pal.glowB, Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), glowPaint)
+        }
 
-        drawCandidateBar(canvas, pal)
+        if (!pal.flat || suggestionsEnabled) drawCandidateBar(canvas, pal)
 
         for (key in keys) {
             if (key.type == KeyType.SPACER) continue
@@ -287,23 +297,32 @@ class GlassKeyboardView(
 
         val topColor = if (isModifier) pal.specialA else pal.keyA
         val bottomColor = if (isModifier) pal.specialB else pal.keyB
-        val radius = dp(12f)
-        keyPaint.shader = LinearGradient(r.left, r.top, r.right, r.bottom, topColor, bottomColor, Shader.TileMode.CLAMP)
-        keyPaint.setShadowLayer(if (isPressed) dp(10f) else 0f, 0f, 0f, pal.accent)
-        canvas.drawRoundRect(r, radius, radius, keyPaint)
-        keyPaint.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
+        val radius = if (pal.flat) dp(6f) else dp(12f)
+        if (pal.flat) {
+            keyPaint.shader = null
+            keyPaint.color = topColor
+            keyPaint.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
+            canvas.drawRoundRect(r, radius, radius, keyPaint)
+            edgePaint.color = if (active) pal.accent else if (pal.isLight) 0x1A000000.toInt() else 0x1AFFFFFF.toInt()
+            canvas.drawRoundRect(r, radius, radius, edgePaint)
+        } else {
+            keyPaint.shader = LinearGradient(r.left, r.top, r.right, r.bottom, topColor, bottomColor, Shader.TileMode.CLAMP)
+            keyPaint.setShadowLayer(if (isPressed) dp(10f) else 0f, 0f, 0f, pal.accent)
+            canvas.drawRoundRect(r, radius, radius, keyPaint)
+            keyPaint.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
 
-        edgePaint.color = if (active) pal.accent else if (pal.isLight) 0x1A000000 else 0x3DFFFFFF.toInt()
-        canvas.drawRoundRect(r, radius, radius, edgePaint)
+            edgePaint.color = if (active) pal.accent else if (pal.isLight) 0x1A000000 else 0x3DFFFFFF.toInt()
+            canvas.drawRoundRect(r, radius, radius, edgePaint)
 
-        val highlight = RectF(r.left + dp(2f), r.top + dp(2f), r.right - dp(2f), r.top + dp(3f))
-        keyPaint.shader = null
-        keyPaint.color = if (pal.isLight) 0xFFFFFFFF.toInt() else 0x55FFFFFF.toInt()
-        canvas.drawRoundRect(highlight, dp(5f), dp(5f), keyPaint)
+            val highlight = RectF(r.left + dp(2f), r.top + dp(2f), r.right - dp(2f), r.top + dp(3f))
+            keyPaint.shader = null
+            keyPaint.color = if (pal.isLight) 0xFFFFFFFF.toInt() else 0x55FFFFFF.toInt()
+            canvas.drawRoundRect(highlight, dp(5f), dp(5f), keyPaint)
+        }
 
         val label = when (key.type) {
             KeyType.ENTER -> enterLabel
-            KeyType.LANGUAGE -> language
+            KeyType.LANGUAGE -> "🌐"
             else -> key.label
         }
         val isEmoji = key.type == KeyType.CHAR && key.value.isNotEmpty() && key.value.codePointAt(0) > 0xFFFF
@@ -321,16 +340,20 @@ class GlassKeyboardView(
             else -> pal.keyText
         }
         if (key.type == KeyType.SPACE) {
-            smallPaint.color = if (pal.isLight) 0x99000000.toInt() else 0x99FFFFFF.toInt()
-            smallPaint.textSize = sp(13f)
-            canvas.drawText(context.getString(R.string.space_label), r.centerX(), smallPaint.baseline(r.centerY()), smallPaint)
+            if (!pal.flat) {
+                smallPaint.color = if (pal.isLight) 0x99000000.toInt() else 0x99FFFFFF.toInt()
+                smallPaint.textSize = sp(13f)
+                canvas.drawText(context.getString(R.string.space_label), r.centerX(), smallPaint.baseline(r.centerY()), smallPaint)
+            }
         } else {
             canvas.drawText(label, r.centerX(), textPaint.baseline(r.centerY()), textPaint)
         }
         if (key.hint.isNotEmpty()) {
-            smallPaint.color = if (pal.isLight) 0x993C4043.toInt() else 0x8094A3B8.toInt()
+            smallPaint.color = if (pal.flat) 0xB0E0E0E7.toInt() else if (pal.isLight) 0x993C4043.toInt() else 0x8094A3B8.toInt()
             smallPaint.textSize = sp(10f)
-            canvas.drawText(key.hint, r.centerX(), smallPaint.baseline(r.top + sp(14f)), smallPaint)
+            smallPaint.textAlign = Paint.Align.RIGHT
+            canvas.drawText(key.hint, r.right - dp(3f), smallPaint.baseline(r.top + sp(12f)), smallPaint)
+            smallPaint.textAlign = Paint.Align.CENTER
         }
     }
 

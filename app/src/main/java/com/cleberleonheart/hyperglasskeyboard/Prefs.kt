@@ -7,6 +7,7 @@ const val THEME_COUNT = 6
 const val HEIGHT_MIN = 70
 const val HEIGHT_MAX = 140
 private const val MAX_LEARNED = 300
+private const val LINUX_PRESET = "linuxPresetApplied"
 
 object PrefKeys {
     const val THEME = "theme"
@@ -22,8 +23,18 @@ object PrefKeys {
 class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("hyperglass_prefs", Context.MODE_PRIVATE)
 
+    init {
+        if (!sp.getBoolean(LINUX_PRESET, false)) {
+            sp.edit()
+                .putInt(PrefKeys.THEME, 3)
+                .putBoolean(PrefKeys.SUGGESTIONS, false)
+                .putBoolean(LINUX_PRESET, true)
+                .apply()
+        }
+    }
+
     var theme: Int
-        get() = sp.getInt(PrefKeys.THEME, 4)
+        get() = sp.getInt(PrefKeys.THEME, 3)
         set(value) = sp.edit().putInt(PrefKeys.THEME, value).apply()
 
     var vibrate: Boolean
@@ -35,7 +46,7 @@ class Prefs(context: Context) {
         set(value) = sp.edit().putBoolean(PrefKeys.SOUND, value).apply()
 
     var suggestions: Boolean
-        get() = sp.getBoolean(PrefKeys.SUGGESTIONS, true)
+        get() = sp.getBoolean(PrefKeys.SUGGESTIONS, false)
         set(value) = sp.edit().putBoolean(PrefKeys.SUGGESTIONS, value).apply()
 
     var autoCapitalize: Boolean

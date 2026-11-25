@@ -72,9 +72,10 @@ private fun line(y: Int, vararg parts: Part): List<GlassKey> {
 private val bottomRow = line(
     3,
     p("?123", 1.5f, KeyType.PAGE),
-    p("🎤", 1f, KeyType.MIC),
-    p("espaço", 6.5f, KeyType.SPACE),
-    p("PT", 1f, KeyType.LANGUAGE),
+    p(",", 1f),
+    p("🌐", 1f, KeyType.LANGUAGE),
+    p("espaço", 5.5f, KeyType.SPACE),
+    p(".", 1f),
     p("↵", 2f, KeyType.ENTER)
 )
 

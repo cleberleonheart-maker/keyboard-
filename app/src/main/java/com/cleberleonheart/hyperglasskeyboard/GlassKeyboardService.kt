@@ -22,7 +22,7 @@ class GlassKeyboardService : InputMethodService(), GlassKeyListener {
 
     private lateinit var prefs: Prefs
     private var view: GlassKeyboardView? = null
-    private var shift = 0
+    private var shift = 2
     private var lastShiftTap = 0L
     private var currentWord = ""
     private var sentenceStart = true
