@@ -13,11 +13,11 @@ import android.graphics.Typeface
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.SoundEffectConstants
 import android.view.View
+import android.view.View.MeasureSpec
 import android.view.WindowInsets
 
 interface GlassKeyListener {
@@ -46,7 +46,8 @@ private val PALETTES = listOf(
     Palette(0xFF130C26.toInt(), 0xFF1D1238.toInt(), 0x66C084FC.toInt(), 0x55F0ABFC.toInt(), 0xFFE9D5FF.toInt(), 0x26FFFFFF.toInt(), 0x0DFFFFFF.toInt(), 0x66A855F7.toInt(), 0x447E22C5.toInt()),
     Palette(0xFF06151F.toInt(), 0xFF0A2230.toInt(), 0x6622D3EE.toInt(), 0x5534D399.toInt(), 0xFF67E8F9.toInt(), 0x26FFFFFF.toInt(), 0x0DFFFFFF.toInt(), 0x660E7490.toInt(), 0x440F766E.toInt()),
     Palette(0xFF0A0A0F.toInt(), 0xFF14141C.toInt(), 0x55F472B6.toInt(), 0x55818CF8.toInt(), 0xFFFDA4AF.toInt(), 0x20FFFFFF.toInt(), 0x0AFFFFFF.toInt(), 0x665B5878.toInt(), 0x443F3E56.toInt()),
-    Palette(0xFFF1F3F4.toInt(), 0xFFE3E6EA.toInt(), 0x0A1A73E8.toInt(), 0x0A34A853.toInt(), 0xFF1A73E8.toInt(), 0xFFFFFFFF.toInt(), 0xFFF1F3F4.toInt(), 0xFFE8EAED.toInt(), 0xFFDADCE0.toInt(), 0xFF202124.toInt(), 0xFF3C4043.toInt(), true)
+    Palette(0xFFF1F3F4.toInt(), 0xFFE3E6EA.toInt(), 0x0A1A73E8.toInt(), 0x0A34A853.toInt(), 0xFF1A73E8.toInt(), 0xFFFFFFFF.toInt(), 0xFFF1F3F4.toInt(), 0xFFE8EAED.toInt(), 0xFFDADCE0.toInt(), 0xFF202124.toInt(), 0xFF3C4043.toInt(), true),
+    Palette(0xFF1A1206.toInt(), 0xFF2A1B08.toInt(), 0x66F59E0B.toInt(), 0x55FBBF24.toInt(), 0xFFFCD34D.toInt(), 0x26FFFFFF.toInt(), 0x0DFFFFFF.toInt(), 0x66B45309.toInt(), 0x447A3E0B.toInt())
 )
 
 class GlassKeyboardView(
@@ -57,7 +58,7 @@ class GlassKeyboardView(
     var keys: List<GlassKey> = Layouts.LETTERS
     var candidates: List<String> = emptyList()
     var shiftState: Int = 0
-    var enterLabel: String = "↵"
+    var enterLabel: String = context.getString(R.string.enter_default)
     var language: String = "PT"
     var paletteIndex: Int = 0
     var suggestionsEnabled: Boolean = true
@@ -66,12 +67,12 @@ class GlassKeyboardView(
     var soundEnabled: Boolean = false
 
     private val density = resources.displayMetrics.density
-    private val scaledDensity = resources.displayMetrics.scaledDensity
+    private val scaledDensity = density * resources.configuration.fontScale
 
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val keyPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val edgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = dp(1f).toFloat() }
+    private val edgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = dp(1f) }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -83,6 +84,7 @@ class GlassKeyboardView(
     private var altIndex = -1
     private var popupVisible = false
     private var backspaceHeld = false
+    private var pressedCandidate = -1
     private var popupLeft = 0f
     private var popupCell = 0f
     private var bottomInset = 0
@@ -120,8 +122,15 @@ class GlassKeyboardView(
         }
     }
 
+    private val clearCandidatePress = Runnable {
+        pressedCandidate = -1
+        invalidate()
+    }
+
     init {
-        setLayerType(LAYER_TYPE_SOFTWARE, null)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            setLayerType(LAYER_TYPE_SOFTWARE, null)
+        }
         isClickable = true
         setOnApplyWindowInsetsListener { v, insets ->
             bottomInset = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -137,6 +146,7 @@ class GlassKeyboardView(
 
     private fun dp(v: Float) = v * density
     private fun sp(v: Float) = v * scaledDensity
+    private fun Paint.baseline(centerY: Float) = centerY - (this.ascent() + this.descent()) / 2f
 
     private fun ensureBottomInset() {
         if (bottomInset == 0) {
@@ -156,10 +166,17 @@ class GlassKeyboardView(
         if (landscape) bottomInset = 0 else ensureBottomInset()
         val baseDp = if (landscape) 190f else 300f
         val desired = (baseDp * heightPercent / 100f * density).toInt() + bottomInset
-        setMeasuredDimension(width, desired)
+        val height = when (MeasureSpec.getMode(heightMeasureSpec)) {
+            MeasureSpec.EXACTLY -> MeasureSpec.getSize(heightMeasureSpec)
+            MeasureSpec.AT_MOST -> minOf(desired, MeasureSpec.getSize(heightMeasureSpec))
+            else -> desired
+        }
+        setMeasuredDimension(width, maxOf(height, 1))
     }
 
-    private fun candidateHeight() = dp(44f)
+    private fun candidateHeight(): Float = minOf(dp(44f), maxOf(height * 0.16f, dp(32f)))
+
+    private fun toolbarStart(): Float = maxOf(width - dp(170f), dp(190f))
 
     private fun keyRect(key: GlassKey): RectF {
         val gap = dp(4f)
@@ -179,21 +196,20 @@ class GlassKeyboardView(
 
     private fun candidateRect(index: Int): RectF {
         val h = candidateHeight()
-        val end = width - dp(180f)
         val start = dp(10f)
-        val slotW = (end - start) / 3f
+        val slotW = (toolbarStart() - dp(10f) - start) / 3f
         return RectF(start + index * slotW, dp(5f), start + (index + 1) * slotW, h - dp(5f))
     }
 
     private fun iconRect(index: Int): RectF {
         val size = dp(38f)
-        val start = width - dp(170f)
+        val start = toolbarStart()
         return RectF(start + index * (size + dp(4f)), dp(6f), start + index * (size + dp(4f)) + size, candidateHeight() - dp(6f))
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val pal = PALETTES[paletteIndex % PALETTES.size]
+        val pal = PALETTES[Math.floorMod(paletteIndex, PALETTES.size)]
 
         bgPaint.shader = LinearGradient(0f, 0f, 0f, height.toFloat(), pal.bgTop, pal.bgBottom, Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
@@ -225,16 +241,25 @@ class GlassKeyboardView(
 
         if (suggestionsEnabled && candidates.isNotEmpty()) {
             smallPaint.color = pal.keyText
-            smallPaint.textSize = sp(15f)
+            smallPaint.textSize = sp(16f)
             for (i in candidateSlots()) {
                 if (i >= candidates.size) break
                 val r = candidateRect(i)
-                canvas.drawText(candidates[i], r.centerX(), r.centerY() + sp(5f), smallPaint)
+                if (i == pressedCandidate) {
+                    keyPaint.shader = null
+                    keyPaint.color = if (pal.isLight) 0x22000000 else 0x33FFFFFF.toInt()
+                    canvas.drawRoundRect(
+                        RectF(r.left + dp(2f), r.top + dp(2f), r.right - dp(2f), r.bottom - dp(2f)),
+                        dp(10f), dp(10f), keyPaint
+                    )
+                }
+                smallPaint.color = if (i == pressedCandidate) pal.accent else pal.keyText
+                canvas.drawText(candidates[i], r.centerX(), smallPaint.baseline(r.centerY()), smallPaint)
             }
         } else {
             smallPaint.color = if (pal.isLight) 0x99000000.toInt() else 0x99FFFFFF.toInt()
             smallPaint.textSize = sp(11f)
-            canvas.drawText("Hyper Glass", dp(14f), candidateHeight() / 2f + sp(4f), smallPaint)
+            canvas.drawText(context.getString(R.string.brand), dp(14f), smallPaint.baseline(candidateHeight() / 2f), smallPaint)
         }
 
         val icons = listOf("⚙", "🌐", "◐", "📋")
@@ -242,13 +267,18 @@ class GlassKeyboardView(
         smallPaint.color = pal.keyText
         icons.forEachIndexed { i, icon ->
             val r = iconRect(i)
-            canvas.drawText(icon, r.centerX(), r.centerY() + sp(6f), smallPaint)
+            canvas.drawText(icon, r.centerX(), smallPaint.baseline(r.centerY()), smallPaint)
         }
     }
 
     private fun drawKey(canvas: Canvas, key: GlassKey, pal: Palette) {
-        val r = keyRect(key)
+        val base = keyRect(key)
         val isPressed = key === pressed
+        val r = if (isPressed) {
+            RectF(base.left + dp(2f), base.top + dp(2f), base.right - dp(2f), base.bottom - dp(2f))
+        } else {
+            base
+        }
         val isModifier = key.type != KeyType.CHAR
         val active = isPressed ||
             (key.type == KeyType.SHIFT && shiftState > 0) ||
@@ -278,11 +308,11 @@ class GlassKeyboardView(
         }
         val isEmoji = key.type == KeyType.CHAR && key.value.isNotEmpty() && key.value.codePointAt(0) > 0xFFFF
         textPaint.textSize = when {
-            isEmoji -> sp(24f)
-            key.type == KeyType.SPACE -> sp(12f)
-            label.length > 2 -> sp(12f)
-            isModifier -> sp(18f)
-            else -> sp(22f)
+            isEmoji -> sp(28f)
+            key.type == KeyType.SPACE -> sp(13f)
+            label.length > 2 -> sp(14f)
+            isModifier -> sp(21f)
+            else -> sp(27f)
         }
         textPaint.color = when {
             active -> pal.accent
@@ -290,28 +320,28 @@ class GlassKeyboardView(
             else -> pal.keyText
         }
         if (key.type == KeyType.SPACE) {
-            smallPaint.textAlign = Paint.Align.CENTER
             smallPaint.color = if (pal.isLight) 0x99000000.toInt() else 0x99FFFFFF.toInt()
-            smallPaint.textSize = sp(12f)
-            canvas.drawText("espaço", r.centerX(), r.centerY() + sp(4f), smallPaint)
+            smallPaint.textSize = sp(13f)
+            canvas.drawText(context.getString(R.string.space_label), r.centerX(), smallPaint.baseline(r.centerY()), smallPaint)
         } else {
-            canvas.drawText(label, r.centerX(), r.centerY() + textPaint.descent() - textPaint.ascent() / 2f - textPaint.descent() / 2f, textPaint)
+            canvas.drawText(label, r.centerX(), textPaint.baseline(r.centerY()), textPaint)
         }
         if (key.hint.isNotEmpty()) {
-            smallPaint.textAlign = Paint.Align.CENTER
             smallPaint.color = if (pal.isLight) 0xAA3C4043.toInt() else 0xAA94A3B8.toInt()
-            smallPaint.textSize = sp(10f)
-            canvas.drawText(key.hint, r.centerX(), r.top + sp(14f), smallPaint)
+            smallPaint.textSize = sp(11f)
+            canvas.drawText(key.hint, r.centerX(), smallPaint.baseline(r.top + sp(14f)), smallPaint)
         }
     }
 
     private fun drawPopup(canvas: Canvas, key: GlassKey, pal: Palette) {
         val r = keyRect(key)
         val labels = if (popupVisible && key.alt.isNotEmpty()) key.alt else listOf(key.label)
-        popupCell = dp(46f).toFloat()
+        popupCell = dp(46f)
         val totalW = labels.size * popupCell
-        popupLeft = (r.centerX() - totalW / 2f).coerceIn(dp(6f).toFloat(), width - totalW - dp(6f))
-        val topY = (r.top - dp(58f)).coerceAtLeast(candidateHeight().toFloat())
+        popupLeft = (r.centerX() - totalW / 2f)
+            .coerceAtLeast(dp(6f))
+            .coerceAtMost(maxOf(width - totalW - dp(6f), dp(6f)))
+        val topY = (r.top - dp(58f)).coerceAtLeast(candidateHeight())
         val box = RectF(popupLeft, topY, popupLeft + totalW, topY + dp(50f))
 
         val popTop = if (pal.isLight) 0xEEFFFFFF.toInt() else 0x44FFFFFF.toInt()
@@ -332,9 +362,9 @@ class GlassKeyboardView(
                     dp(10f), dp(10f), keyPaint
                 )
             }
-            textPaint.textSize = sp(21f)
+            textPaint.textSize = sp(24f)
             textPaint.color = if (popupVisible && i == altIndex) Color.WHITE else pal.keyText
-            canvas.drawText(label, popupLeft + i * popupCell + popupCell / 2f, box.centerY() + sp(6f), textPaint)
+            canvas.drawText(label, popupLeft + i * popupCell + popupCell / 2f, textPaint.baseline(box.centerY()), textPaint)
         }
     }
 
@@ -356,7 +386,6 @@ class GlassKeyboardView(
                     popupVisible = false
                     performFeedback()
                     if (pressed?.type == KeyType.BACKSPACE) {
-                        Log.d("HGKey", "backspace DOWN")
                         backspaceHeld = true
                         listener.onKey(pressed!!, -1)
                         handler.postDelayed(backspaceRepeat, 300)
@@ -402,10 +431,9 @@ class GlassKeyboardView(
             }
             MotionEvent.ACTION_UP -> {
                 val key = pressed
-                if (key != null && !backspaceHeld && !popupVisible) {
-                    listener.onKey(key, -1)
-                } else if (key != null && popupVisible && altIndex >= 0 && altIndex < key.alt.size) {
-                    listener.onKey(key, altIndex)
+                if (key != null && !backspaceHeld) {
+                    val alt = if (popupVisible && altIndex in key.alt.indices) altIndex else -1
+                    listener.onKey(key, alt)
                 }
                 cancelTimers()
                 pressed = null
@@ -431,13 +459,19 @@ class GlassKeyboardView(
             for (i in candidateSlots()) {
                 if (i >= candidates.size) break
                 if (candidateRect(i).contains(x, candidateHeight() / 2f)) {
+                    pressedCandidate = i
+                    handler.removeCallbacks(clearCandidatePress)
+                    handler.postDelayed(clearCandidatePress, 140)
+                    performFeedback()
                     listener.onCandidate(candidates[i])
+                    invalidate()
                     return
                 }
             }
         }
         listOf("settings", "translate", "theme", "clipboard").forEachIndexed { i, command ->
             if (iconRect(i).contains(x, candidateHeight() / 2f)) {
+                performFeedback()
                 listener.onCommand(command)
                 return@forEachIndexed
             }

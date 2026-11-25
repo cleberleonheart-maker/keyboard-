@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hyper Glass Keyboard</string>
+    <string name="settings_label">Hyper Glass · Configurações</string>
+    <string name="settings_title">Hyper Glass Keyboard</string>
+    <string name="settings_intro">Teclado IME completo em estilo glass: QWERTY ABNT2, números, símbolos, emoji, acentos por toque longo, sugestões que aprendem com seu uso, shift/caps lock, backspace com repetição, colagem e atalhos de tema.\n\n1) Toque em “Ativar teclado” e habilite Hyper Glass Keyboard.\n2) Em Configurações do sistema › Idioma e entrada, selecione Hyper Glass Keyboard.\n3) Toque no ícone ◐ na barra do teclado para trocar o tema.</string>
+    <string name="activate_keyboard">Ativar teclado nas configurações do sistema</string>
+    <string name="section_appearance_sound">Aparência e som</string>
+    <string name="theme_label">Tema glass</string>
+    <string-array name="theme_names">
+        <item>Aurora</item>
+        <item>Violeta</item>
+        <item>Ocean</item>
+        <item>Obsidian</item>
+        <item>Gboard claro</item>
+        <item>Âmbar</item>
+    </string-array>
+    <string name="vibrate_label">Vibrar ao tocar</string>
+    <string name="sound_label">Som ao tocar</string>
+    <string name="height_label">Altura do teclado</string>
+    <string name="height_value">%1$s: %2$d%%</string>
+    <string name="section_typing">Digitação</string>
+    <string name="suggestions_label">Mostrar sugestões de palavras</string>
+    <string name="auto_capitalize_label">Capitalizar início de frase</string>
+    <string name="typing_tips">Dicas: toque e segure uma letra para acentos (á, é, í, ó, ú, ç); toque duas vezes em ⇧ para travar maiúsculas; arraste o dedo sobre as teclas para digitar deslizando; toque e segure ⌫ para apagar várias letras.</string>
+    <string name="clear_learned">Limpar palavras aprendidas</string>
+    <string name="learned_cleared">Dicionário pessoal limpo</string>
+    <string name="section_updates">Atualizações</string>
+    <string name="current_version">Versão atual: %1$s</string>
+    <string name="check_updates">Verificar atualizações</string>
+    <string name="checking_updates">Verificando atualizações…</string>
+    <string name="update_available">Nova versão %1$s disponível (atual: %2$s)</string>
+    <string name="open_update">Abrir versão %1$s</string>
+    <string name="up_to_date">Você está na versão mais recente (%1$s)</string>
+    <string name="update_error">Não foi possível verificar atualizações</string>
+    <string name="download_update">Baixar atualização</string>
+    <string name="enter_search">Buscar</string>
+    <string name="enter_send">Enviar</string>
+    <string name="enter_go">Ir</string>
+    <string name="enter_next">Próximo</string>
+    <string name="enter_done">OK</string>
+    <string name="enter_previous">Anterior</string>
+    <string name="enter_default">↵</string>
+    <string name="space_label">espaço</string>
+    <string name="brand">Hyper Glass</string>
+    <string name="theme_changed">Tema %1$d/%2$d · %3$s</string>
+    <string name="language_changed">Idioma: %1$s</string>
+    <string name="translate_prompt">Digite uma palavra para traduzir</string>
+    <string name="translate_failure">Não foi possível traduzir agora</string>
+    <string name="translate_hint">Toque na tradução para inserir</string>
+    <string name="clipboard_empty">Área de transferência vazia</string>
+    <string name="clipboard_error">Não foi possível acessar a área de transferência</string>
+    <string name="mic_hint">Use o botão de microfone do sistema para ditado</string>
+    <string name="emoji_page">%1$d/%2$d</string>
+</resources>

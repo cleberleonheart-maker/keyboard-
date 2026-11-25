@@ -2,7 +2,6 @@ package com.cleberleonheart.hyperglasskeyboard
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
@@ -20,11 +19,17 @@ import android.widget.Toast
 class SettingsActivity : Activity() {
 
     private lateinit var prefs: Prefs
+    private lateinit var updateStatus: TextView
+    private lateinit var updateNotes: TextView
+    private lateinit var downloadButton: Button
+    private var currentUpdate: UpdateInfo? = null
+    private var updateCheck: UpdateCheckHandle? = null
+    private var updateCheckId = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
-        title = "Hyper Glass Keyboard"
+        title = getString(R.string.settings_title)
 
         val scroll = android.widget.ScrollView(this)
         val root = LinearLayout(this).apply {
@@ -34,75 +39,127 @@ class SettingsActivity : Activity() {
         scroll.addView(root, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         setContentView(scroll)
 
-        root.addView(headline("Hyper Glass Keyboard"))
-        root.addView(
-            info(
-                "Teclado IME completo em estilo glass: QWERTY ABNT2, números, símbolos, " +
-                    "emoji, acentos por toque longo, sugestões que aprendem com seu uso, " +
-                    "shift/caps lock, backspace com repetição, colagem e atalhos de tema.\n\n" +
-                    "1) Toque em “Ativar teclado” e habilite Hyper Glass Keyboard.\n" +
-                    "2)Em Configurações do sistema › Idioma e entrada, selecione Hyper Glass Keyboard.\n" +
-                    "3)Toque no ícone ◐ na barra do teclado para trocar o tema."
-            )
-        )
+        root.addView(headline(getString(R.string.settings_title)))
+        root.addView(info(getString(R.string.settings_intro)))
 
-        val activate = Button(this).apply {
-            text = "Ativar teclado nas configurações do sistema"
+        root.addView(Button(this).apply {
+            text = getString(R.string.activate_keyboard)
             setOnClickListener { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }
-        }
-        root.addView(activate, fullWidth())
+        }, fullWidth())
 
-        root.addView(headline("Aparência e som"))
+        root.addView(headline(getString(R.string.section_appearance_sound)))
         root.addView(
             spinnerRow(
-                "Tema glass",
-                listOf("Aurora", "Violeta", "Ocean", "Obsidian", "Gboard claro"),
+                getString(R.string.theme_label),
+                resources.getStringArray(R.array.theme_names).toList(),
                 prefs.theme
             ) { prefs.theme = it }
         )
+        root.addView(switchRow(getString(R.string.vibrate_label), prefs.vibrate) { prefs.vibrate = it })
+        root.addView(switchRow(getString(R.string.sound_label), prefs.sound) { prefs.sound = it })
         root.addView(
-            switchRow("Vibrar ao tocar", prefs.vibrate) { prefs.vibrate = it }
-        )
-        root.addView(
-            switchRow("Som ao tocar", prefs.sound) { prefs.sound = it }
-        )
-        root.addView(
-            seekRow("Altura do teclado", prefs.heightPercent, 70, 140) {
+            seekRow(getString(R.string.height_label), prefs.heightPercent, HEIGHT_MIN, HEIGHT_MAX) {
                 prefs.heightPercent = it
             }
         )
 
-        root.addView(headline("Digitação"))
+        root.addView(headline(getString(R.string.section_typing)))
         root.addView(
-            switchRow("Mostrar sugestões de palavras", prefs.suggestions) {
+            switchRow(getString(R.string.suggestions_label), prefs.suggestions) {
                 prefs.suggestions = it
             }
         )
         root.addView(
-            switchRow("Capitalizar início de frase", prefs.autoCapitalize) {
+            switchRow(getString(R.string.auto_capitalize_label), prefs.autoCapitalize) {
                 prefs.autoCapitalize = it
             }
         )
-        root.addView(
-            info(
-                "Dicas: toque e segure uma letra para acentos (á, é, í, ó, ú, ç); " +
-                    "toque duas vezes em ⇧ para travar maiúsculas; " +
-                    "arraste o dedo sobre as teclas para digitar deslizando; " +
-                    "toque e segure ⌫ para apagar várias letras."
-            )
-        )
+        root.addView(info(getString(R.string.typing_tips)))
 
-        val reset = Button(this).apply {
-            text = "Limpar palavras aprendidas"
+        root.addView(Button(this).apply {
+            text = getString(R.string.clear_learned)
             setOnClickListener {
                 prefs.clearLearned()
-                Toast.makeText(this@SettingsActivity, "Dicionário pessoal limpo", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@SettingsActivity, R.string.learned_cleared, Toast.LENGTH_SHORT).show()
+            }
+        }, fullWidth())
+
+        root.addView(headline(getString(R.string.section_updates)))
+        updateStatus = TextView(this).apply {
+            text = getString(R.string.current_version, BuildConfig.VERSION_NAME)
+            textSize = 14f
+            setTextColor(color(R.color.settings_text))
+            layoutParams = fullWidth()
+        }
+        root.addView(updateStatus)
+
+        root.addView(Button(this).apply {
+            text = getString(R.string.check_updates)
+            setOnClickListener { checkUpdates() }
+        }, fullWidth())
+
+        updateNotes = TextView(this).apply {
+            textSize = 13f
+            setTextColor(color(R.color.settings_text_secondary))
+            visibility = android.view.View.GONE
+            layoutParams = fullWidth()
+        }
+        root.addView(updateNotes)
+
+        downloadButton = Button(this).apply {
+            text = getString(R.string.download_update)
+            visibility = android.view.View.GONE
+            setOnClickListener { currentUpdate?.let { UpdateChecker.open(this@SettingsActivity, it) } }
+        }
+        root.addView(downloadButton, fullWidth())
+
+        checkUpdates()
+    }
+
+    override fun onDestroy() {
+        updateCheckId++
+        updateCheck?.cancel()
+        super.onDestroy()
+    }
+
+    private fun checkUpdates() {
+        updateCheck?.cancel()
+        val id = ++updateCheckId
+        updateStatus.text = getString(R.string.checking_updates)
+        updateNotes.visibility = android.view.View.GONE
+        downloadButton.visibility = android.view.View.GONE
+        currentUpdate = null
+        updateCheck = UpdateChecker.check { state ->
+            if (id != updateCheckId || isFinishing || isDestroyed) return@check
+            updateCheck = null
+            when (state) {
+                is UpdateState.Available -> {
+                    currentUpdate = state.info
+                    updateStatus.text = getString(
+                        R.string.update_available,
+                        state.info.version,
+                        BuildConfig.VERSION_NAME
+                    )
+                    val notes = state.info.notes.trim()
+                    if (notes.isNotEmpty()) {
+                        updateNotes.text = notes.take(500)
+                        updateNotes.visibility = android.view.View.VISIBLE
+                    }
+                    downloadButton.text = getString(R.string.open_update, state.info.version)
+                    downloadButton.visibility = android.view.View.VISIBLE
+                }
+                UpdateState.UpToDate -> updateStatus.text = getString(
+                    R.string.up_to_date,
+                    BuildConfig.VERSION_NAME
+                )
+                UpdateState.Error -> updateStatus.text = getString(R.string.update_error)
             }
         }
-        root.addView(reset, fullWidth())
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    private fun color(id: Int) = resources.getColor(id, theme)
 
     private fun fullWidth() = LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -112,7 +169,7 @@ class SettingsActivity : Activity() {
     private fun headline(text: String): TextView = TextView(this).apply {
         this.text = text
         textSize = 19f
-        setTextColor(Color.parseColor("#7DD3FC"))
+        setTextColor(color(R.color.settings_accent))
         typeface = android.graphics.Typeface.DEFAULT_BOLD
         layoutParams = fullWidth().apply { topMargin = dp(24) }
     }
@@ -120,7 +177,7 @@ class SettingsActivity : Activity() {
     private fun info(text: String): TextView = TextView(this).apply {
         this.text = text
         textSize = 13f
-        setTextColor(Color.parseColor("#B8C4E0"))
+        setTextColor(color(R.color.settings_text_secondary))
         layoutParams = fullWidth()
     }
 
@@ -133,7 +190,7 @@ class SettingsActivity : Activity() {
         val tv = TextView(this).apply {
             this.text = label
             textSize = 14f
-            setTextColor(Color.parseColor("#E8ECFF"))
+            setTextColor(color(R.color.settings_text))
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         val sw = Switch(this).apply {
@@ -158,7 +215,7 @@ class SettingsActivity : Activity() {
         row.addView(TextView(this).apply {
             text = label
             textSize = 13f
-            setTextColor(Color.parseColor("#94A3C4"))
+            setTextColor(color(R.color.settings_muted))
         })
         val spinner = Spinner(this).apply {
             adapter = ArrayAdapter(this@SettingsActivity, android.R.layout.simple_spinner_item, items).apply {
@@ -186,9 +243,9 @@ class SettingsActivity : Activity() {
             layoutParams = fullWidth()
         }
         val valueText = TextView(this).apply {
-            text = "$label: $value%"
+            text = getString(R.string.height_value, label, value)
             textSize = 13f
-            setTextColor(Color.parseColor("#94A3C4"))
+            setTextColor(color(R.color.settings_muted))
         }
         row.addView(valueText)
         row.addView(SeekBar(this).apply {
@@ -197,7 +254,7 @@ class SettingsActivity : Activity() {
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                     val v = progress + min
-                    valueText.text = "$label: $v%"
+                    valueText.text = getString(R.string.height_value, label, v)
                     if (fromUser) onChange(v)
                 }
                 override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit

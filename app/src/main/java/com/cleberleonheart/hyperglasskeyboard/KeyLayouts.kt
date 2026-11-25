@@ -113,21 +113,28 @@ object Layouts {
         bottomRow
     ).flatten()
 
+    private const val EMOJI_ITEMS_PER_PAGE = 18
+
     private val EMOJI_PAGES = listOf(
         listOf("😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😍", "🥰", "😘", "😋", "😎", "🤩", "🥳", "😏", "😒", "😞", "😢", "😭", "😤", "😡", "🤯", "😱", "🥺", "🤔", "💡", "❤️", "🧡", "💛", "💚"),
         listOf("👍", "👎", "👌", "✌️", "🤞", "🤟", "👋", "🙌", "🤝", "💪", "🙏", "👀", "🔥", "✨", "⭐", "🌈", "☀️", "🌙", "⚡", "🌊", "🍀", "🎉", "🎂", "🎁", "🚀", "✈️", "🏠", "🎵", "🎮", "📱", "💻", "☕", "🍕", "🍺", "🏆", "✅")
     )
 
+    private val EMOJI_CHUNKS = EMOJI_PAGES.flatten().chunked(EMOJI_ITEMS_PER_PAGE)
+
+    val EMOJI_PAGE_COUNT: Int get() = EMOJI_CHUNKS.size
+
     fun emoji(page: Int): List<GlassKey> {
-        val items = EMOJI_PAGES[page % EMOJI_PAGES.size]
+        val safePage = Math.floorMod(page, EMOJI_PAGE_COUNT)
+        val items = EMOJI_CHUNKS[safePage]
         val keys = mutableListOf<GlassKey>()
-        for (i in 0 until 18) {
-            keys += GlassKey(items[i], (i % 6) * 2f, i / 6, 2f, KeyType.CHAR, value = items[i])
+        items.forEachIndexed { i, item ->
+            keys += GlassKey(item, (i % 6) * 2f, i / 6, 2f, KeyType.CHAR, value = item)
         }
         keys += line(
             3,
             p("ABC", 1.5f, KeyType.PAGE),
-            p("😊", 1.5f, KeyType.EMOJI),
+            p("😊", 1.5f, KeyType.EMOJI, hint = "${safePage + 1}/$EMOJI_PAGE_COUNT"),
             p("espaço", 5f, KeyType.SPACE),
             p("⌫", 2f, KeyType.BACKSPACE),
             p("↵", 2f, KeyType.ENTER)

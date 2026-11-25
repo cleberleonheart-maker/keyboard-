@@ -5,7 +5,7 @@
 
     <application
         android:icon="@mipmap/ic_launcher"
-        android:label="Hyper Glass Keyboard"
+        android:label="@string/app_name"
         android:theme="@style/AppTheme">
 
         <service
@@ -23,6 +23,6 @@
         <activity
             android:name=".SettingsActivity"
             android:exported="true"
-            android:label="Hyper Glass · Configurações" />
+            android:label="@string/settings_label" />
     </application>
 </manifest>
