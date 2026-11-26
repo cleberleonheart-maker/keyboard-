@@ -74,6 +74,11 @@ class SettingsActivity : Activity() {
                 prefs.autoCapitalize = it
             }
         )
+        root.addView(
+            switchRow(getString(R.string.enter_sends_label), prefs.enterSends) {
+                prefs.enterSends = it
+            }
+        )
         root.addView(info(getString(R.string.typing_tips)))
 
         root.addView(Button(this).apply {

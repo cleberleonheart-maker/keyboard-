@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.inputmethodservice.InputMethodService
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
@@ -29,6 +30,7 @@ class GlassKeyboardService : InputMethodService(), GlassKeyListener {
     private var layoutKind = "letters"
     private var emojiPage = 0
     private var editorAction = EditorInfo.IME_ACTION_NONE
+    private var singleLine = true
     private var prefsListenerRegistered = false
     private val mainHandler = Handler(Looper.getMainLooper())
     private val translationRequest = AtomicInteger(0)
@@ -69,6 +71,7 @@ class GlassKeyboardService : InputMethodService(), GlassKeyListener {
         v.suggestionsEnabled = prefs.suggestions
         v.heightPercent = prefs.heightPercent
         v.language = prefs.language
+        v.enterLabel = getString(enterLabelRes())
         v.shiftState = shift
         applyLayout()
         updateCandidates()
@@ -81,10 +84,13 @@ class GlassKeyboardService : InputMethodService(), GlassKeyListener {
         } else {
             info?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) ?: EditorInfo.IME_ACTION_NONE
         }
+        singleLine = info?.let {
+            it.inputType and InputType.TYPE_MASK_CLASS != InputType.TYPE_CLASS_TEXT ||
+                it.inputType and InputType.TYPE_TEXT_FLAG_MULTI_LINE == 0
+        } ?: true
         currentWord = ""
         sentenceStart = true
         syncPrefs()
-        view?.enterLabel = getString(labelRes(editorAction))
         view?.refresh()
     }
 
@@ -97,6 +103,18 @@ class GlassKeyboardService : InputMethodService(), GlassKeyListener {
         view?.shiftState = 0
         view?.candidates = emptyList()
         view?.refresh()
+    }
+
+    private fun enterAction() = when {
+        editorAction != EditorInfo.IME_ACTION_NONE -> editorAction
+        singleLine && prefs.enterSends -> EditorInfo.IME_ACTION_SEND
+        else -> EditorInfo.IME_ACTION_NONE
+    }
+
+    private fun enterLabelRes() = if (enterAction() == EditorInfo.IME_ACTION_SEND) {
+        R.string.enter_send
+    } else {
+        labelRes(editorAction)
     }
 
     private fun labelRes(action: Int) = when (action) {
@@ -205,8 +223,9 @@ class GlassKeyboardService : InputMethodService(), GlassKeyListener {
     }
 
     private fun handleEnter(ic: InputConnection) {
-        if (editorAction != EditorInfo.IME_ACTION_NONE) {
-            ic.performEditorAction(editorAction)
+        val action = enterAction()
+        if (action != EditorInfo.IME_ACTION_NONE) {
+            ic.performEditorAction(action)
         } else {
             ic.commitText("\n", 1)
         }
@@ -349,6 +368,7 @@ class GlassKeyboardService : InputMethodService(), GlassKeyListener {
             PrefKeys.VIBRATE,
             PrefKeys.SOUND,
             PrefKeys.SUGGESTIONS,
+            PrefKeys.ENTER_SENDS,
             PrefKeys.HEIGHT,
             PrefKeys.LANGUAGE
         )

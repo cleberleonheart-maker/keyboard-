@@ -16,6 +16,7 @@ object PrefKeys {
     const val SOUND = "sound"
     const val SUGGESTIONS = "suggestions"
     const val AUTO_CAPITALIZE = "autoCapitalize"
+    const val ENTER_SENDS = "enterSends"
     const val HEIGHT = "heightPercent"
     const val LANGUAGE = "language"
     const val LEARNED = "learned"
@@ -53,6 +54,10 @@ class Prefs(context: Context) {
     var autoCapitalize: Boolean
         get() = sp.getBoolean(PrefKeys.AUTO_CAPITALIZE, true)
         set(value) = sp.edit().putBoolean(PrefKeys.AUTO_CAPITALIZE, value).apply()
+
+    var enterSends: Boolean
+        get() = sp.getBoolean(PrefKeys.ENTER_SENDS, true)
+        set(value) = sp.edit().putBoolean(PrefKeys.ENTER_SENDS, value).apply()
 
     var heightPercent: Int
         get() = sp.getInt(PrefKeys.HEIGHT, 100).coerceIn(HEIGHT_MIN, HEIGHT_MAX)

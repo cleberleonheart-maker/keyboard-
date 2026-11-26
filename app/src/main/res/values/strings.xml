@@ -22,6 +22,7 @@
     <string name="section_typing">Digitação</string>
     <string name="suggestions_label">Mostrar sugestões de palavras</string>
     <string name="auto_capitalize_label">Capitalizar início de frase</string>
+    <string name="enter_sends_label">Enter envia mensagem</string>
     <string name="typing_tips">Dicas: toque e segure uma letra para acentos (á, é, í, ó, ú, ç); toque duas vezes em ⇧ para travar maiúsculas; arraste o dedo sobre as teclas para digitar deslizando; toque e segure ⌫ para apagar várias letras.</string>
     <string name="clear_learned">Limpar palavras aprendidas</string>
     <string name="learned_cleared">Dicionário pessoal limpo</string>
