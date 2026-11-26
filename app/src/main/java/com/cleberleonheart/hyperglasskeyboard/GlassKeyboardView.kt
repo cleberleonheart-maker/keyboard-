@@ -170,7 +170,7 @@ class GlassKeyboardView(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         if (isLandscape()) bottomInset = 0 else ensureBottomInset()
-        val baseDp = 340f
+        val baseDp = if (isLandscape()) 340f else 300f
         val desired = (baseDp * heightPercent / 100f * density).toInt() + bottomInset
         val height = when (MeasureSpec.getMode(heightMeasureSpec)) {
             MeasureSpec.UNSPECIFIED -> desired

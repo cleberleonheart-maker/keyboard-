@@ -41,6 +41,8 @@ class GlassKeyboardService : InputMethodService(), GlassKeyListener {
         if (key in UI_PREFS) mainHandler.post { syncPrefs() }
     }
 
+    override fun onEvaluateFullscreenMode(): Boolean = false
+
     override fun onCreateInputView(): View {
         prefs = Prefs(this)
         val keyboardView = GlassKeyboardView(this, this)
