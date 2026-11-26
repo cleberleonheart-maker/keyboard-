@@ -24,6 +24,7 @@ class SettingsActivity : Activity() {
     private lateinit var downloadButton: Button
     private var currentUpdate: UpdateInfo? = null
     private var updateCheck: UpdateCheckHandle? = null
+    private var downloadHandle: UpdateDownloadHandle? = null
     private var updateCheckId = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -114,7 +115,47 @@ class SettingsActivity : Activity() {
         downloadButton = Button(this).apply {
             text = getString(R.string.download_update)
             visibility = android.view.View.GONE
-            setOnClickListener { currentUpdate?.let { UpdateChecker.open(this@SettingsActivity, it) } }
+            setOnClickListener {
+                val update = currentUpdate ?: return@setOnClickListener
+                if (update.apkUrl.isBlank()) {
+                    UpdateChecker.open(this@SettingsActivity, update)
+                    return@setOnClickListener
+                }
+                isEnabled = false
+                text = getString(R.string.downloading_update, 0)
+                downloadHandle?.cancel()
+                downloadHandle = UpdateChecker.download(this@SettingsActivity, update) { state ->
+                    if (isFinishing || isDestroyed) return@download
+                    when (state) {
+                        is UpdateDownloadState.Progress -> text = getString(
+                            R.string.downloading_update,
+                            state.percent
+                        )
+                        UpdateDownloadState.Ready -> {
+                            isEnabled = true
+                            text = getString(R.string.install_update)
+                            downloadHandle = null
+                            if (!UpdateChecker.install(this@SettingsActivity)) {
+                                Toast.makeText(
+                                    this@SettingsActivity,
+                                    R.string.install_permission_needed,
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                        UpdateDownloadState.Failed -> {
+                            isEnabled = true
+                            text = getString(R.string.download_update)
+                            downloadHandle = null
+                            Toast.makeText(
+                                this@SettingsActivity,
+                                R.string.update_failed,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+            }
         }
         root.addView(downloadButton, fullWidth())
 
@@ -124,15 +165,18 @@ class SettingsActivity : Activity() {
     override fun onDestroy() {
         updateCheckId++
         updateCheck?.cancel()
+        downloadHandle?.cancel()
         super.onDestroy()
     }
 
     private fun checkUpdates() {
         updateCheck?.cancel()
+        downloadHandle?.cancel()
         val id = ++updateCheckId
         updateStatus.text = getString(R.string.checking_updates)
         updateNotes.visibility = android.view.View.GONE
         downloadButton.visibility = android.view.View.GONE
+        downloadButton.isEnabled = true
         currentUpdate = null
         updateCheck = UpdateChecker.check { state ->
             if (id != updateCheckId || isFinishing || isDestroyed) return@check

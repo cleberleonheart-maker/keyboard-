@@ -35,6 +35,10 @@
     <string name="up_to_date">Você está na versão mais recente (%1$s)</string>
     <string name="update_error">Não foi possível verificar atualizações</string>
     <string name="download_update">Baixar atualização</string>
+    <string name="downloading_update">Baixando atualização… %1$d%%</string>
+    <string name="install_update">Instalar atualização</string>
+    <string name="update_failed">Falha ao baixar a atualização</string>
+    <string name="install_permission_needed">Permita instalar apps desconhecidos para atualizar</string>
     <string name="enter_search">Buscar</string>
     <string name="enter_send">Enviar</string>
     <string name="enter_go">Ir</string>
