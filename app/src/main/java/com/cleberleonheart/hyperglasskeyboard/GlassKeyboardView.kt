@@ -169,19 +169,21 @@ class GlassKeyboardView(
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
-        val landscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        if (landscape) bottomInset = 0 else ensureBottomInset()
+        if (isLandscape()) bottomInset = 0 else ensureBottomInset()
         val baseDp = 340f
         val desired = (baseDp * heightPercent / 100f * density).toInt() + bottomInset
         val height = when (MeasureSpec.getMode(heightMeasureSpec)) {
-            MeasureSpec.EXACTLY -> MeasureSpec.getSize(heightMeasureSpec)
-            MeasureSpec.AT_MOST -> minOf(desired, MeasureSpec.getSize(heightMeasureSpec))
-            else -> desired
+            MeasureSpec.UNSPECIFIED -> desired
+            else -> minOf(desired, MeasureSpec.getSize(heightMeasureSpec))
         }
         setMeasuredDimension(width, maxOf(height, 1))
     }
 
-    private fun candidateHeight(): Float = minOf(dp(44f), maxOf(height * 0.16f, dp(32f)))
+    private fun isLandscape(): Boolean =
+        resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    private fun candidateHeight(): Float =
+        if (isLandscape()) 0f else minOf(dp(44f), maxOf(height * 0.16f, dp(32f)))
 
     private fun toolbarStart(): Float = maxOf(width - dp(170f), dp(190f))
 
@@ -226,7 +228,7 @@ class GlassKeyboardView(
         glowPaint.shader = RadialGradient(width * 0.92f, height * 0.95f, width * 0.7f, pal.glowB, Color.TRANSPARENT, Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), glowPaint)
 
-        drawCandidateBar(canvas, pal)
+        if (candidateHeight() > 0f) drawCandidateBar(canvas, pal)
 
         for (key in keys) {
             if (key.type == KeyType.SPACER) continue
@@ -400,7 +402,7 @@ class GlassKeyboardView(
         val y = event.y
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                if (y < candidateHeight()) {
+                if (candidateHeight() > 0f && y < candidateHeight()) {
                     handleCandidateTap(x)
                     return true
                 }
@@ -429,7 +431,7 @@ class GlassKeyboardView(
                     return true
                 }
                 if (y >= candidateHeight()) {
-                    val moved = kotlin.math.hypot(x - downX, y - downY) > dp(10f)
+                    val moved = kotlin.math.hypot(x - downX, y - downY) > dp(20f)
                     val hit = findKey(x, y)
                     if (hit !== pressed && moved) {
                         val previous = pressed
