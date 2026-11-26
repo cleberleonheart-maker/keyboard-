@@ -165,7 +165,7 @@ class GlassKeyboardView(
         val width = MeasureSpec.getSize(widthMeasureSpec)
         val landscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
         if (landscape) bottomInset = 0 else ensureBottomInset()
-        val baseDp = if (landscape) 260f else 340f
+        val baseDp = 340f
         val desired = (baseDp * heightPercent / 100f * density).toInt() + bottomInset
         val height = when (MeasureSpec.getMode(heightMeasureSpec)) {
             MeasureSpec.EXACTLY -> MeasureSpec.getSize(heightMeasureSpec)
