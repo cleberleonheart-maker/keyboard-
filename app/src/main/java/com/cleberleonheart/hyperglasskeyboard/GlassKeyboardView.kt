@@ -64,6 +64,12 @@ class GlassKeyboardView(
     var paletteIndex: Int = 0
     var suggestionsEnabled: Boolean = true
     var heightPercent: Int = 100
+        set(value) {
+            if (field != value) {
+                field = value
+                requestLayout()
+            }
+        }
     var vibrateEnabled: Boolean = true
     var soundEnabled: Boolean = false
 
