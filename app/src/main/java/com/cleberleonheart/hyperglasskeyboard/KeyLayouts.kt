@@ -69,14 +69,17 @@ private fun line(y: Int, vararg parts: Part): List<GlassKey> {
     }
 }
 
-private val bottomRow = line(
+private fun bottomRow(first: Part) = line(
     3,
-    p("?123", 1.5f, KeyType.PAGE),
+    first,
     p("🎤", 1f, KeyType.MIC),
     p("espaço", 6.5f, KeyType.SPACE),
     p("PT", 1f, KeyType.LANGUAGE),
     p("↵", 1.5f, KeyType.ENTER)
 )
+
+private val bottomRowLetters = bottomRow(p("?123", 1.5f, KeyType.PAGE))
+private val bottomRowSymbols = bottomRow(p("ABC", 1.5f, KeyType.PAGE))
 
 object Layouts {
     const val UNITS = 11.5f
@@ -91,7 +94,7 @@ object Layouts {
             p(","), p("."),
             p("⌫", 1.25f, KeyType.BACKSPACE)
         ),
-        bottomRow
+        bottomRowLetters
     ).flatten()
 
     val NUMBERS: List<GlassKey> = listOf(
@@ -103,14 +106,14 @@ object Layouts {
             p("", 0.75f, KeyType.SPACER)
         ),
         line(2, p("#+=", 1.25f, KeyType.PAGE), *listOf(".", ",", "?", "!", "'", "\"", "(", ")", "#").map { p(it) }.toTypedArray(), p("⌫", 1.25f, KeyType.BACKSPACE)),
-        bottomRow
+        bottomRowSymbols
     ).flatten()
 
     val SYMBOLS: List<GlassKey> = listOf(
         line(0, p("", 0.75f, KeyType.SPACER), *listOf("[", "]", "{", "}", "#", "%", "^", "*", "+", "=").map { p(it) }.toTypedArray(), p("", 0.75f, KeyType.SPACER)),
         line(1, p("", 0.75f, KeyType.SPACER), *listOf("~", "`", "|", "<", ">", "€", "£", "¥", "¢", "«").map { p(it) }.toTypedArray(), p("", 0.75f, KeyType.SPACER)),
         line(2, p("123", 1.25f, KeyType.PAGE), *listOf("•", "°", "™", "©", "®", "✓", "÷", "×", "→").map { p(it) }.toTypedArray(), p("⌫", 1.25f, KeyType.BACKSPACE)),
-        bottomRow
+        bottomRowSymbols
     ).flatten()
 
     private const val EMOJI_ITEMS_PER_PAGE = 18

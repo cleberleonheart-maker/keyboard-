@@ -147,8 +147,8 @@ class GlassKeyboardService : InputMethodService(), GlassKeyListener {
             KeyType.ENTER -> handleEnter(ic)
             KeyType.PAGE -> {
                 layoutKind = when (key.label) {
-                    "?123" -> "numbers"
-                    "#+=", "123" -> "symbols"
+                    "?123", "123" -> "numbers"
+                    "#+=" -> "symbols"
                     else -> "letters"
                 }
                 applyLayout()

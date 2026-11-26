@@ -20,4 +20,12 @@ class KeyLayoutsTest {
     fun emojiPageWrapsAround() {
         assertEquals(Layouts.emoji(0), Layouts.emoji(Layouts.EMOJI_PAGE_COUNT * 3))
     }
+
+    @Test
+    fun numberAndSymbolLayoutsHaveRouteBackToLetters() {
+        listOf(Layouts.NUMBERS, Layouts.SYMBOLS).forEach { layout ->
+            assertEquals(1, layout.count { it.type == KeyType.PAGE && it.label == "ABC" })
+        }
+        assertEquals(1, Layouts.SYMBOLS.count { it.type == KeyType.PAGE && it.label == "123" })
+    }
 }
